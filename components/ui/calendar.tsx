@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { DateFormatter, DayPicker } from 'react-day-picker';
 import { ja } from 'date-fns/locale';
 import { format } from 'date-fns';
+import { useResponsiveMonths } from '@/hooks/useResponsiveMonths';
 
 import { cn } from '@/lib/utils';
 import { buttonVariants } from '@/components/ui/button';
@@ -15,6 +16,8 @@ function Calendar({
   showOutsideDays = true,
   ...props
 }: React.ComponentProps<typeof DayPicker>) {
+  const numberOfMonths = useResponsiveMonths();
+
   const formatCaption: DateFormatter = (date, options) => {
     const y = format(date, 'yyyy');
     const m = format(date, 'MM', { locale: options?.locale });
@@ -25,7 +28,7 @@ function Calendar({
     <DayPicker
       locale={ja}
       weekStartsOn={1}
-      numberOfMonths={2}
+      numberOfMonths={numberOfMonths}
       // disabled={{ dayOfWeek: [0, 6] }}
       formatters={{ formatCaption }}
       showOutsideDays={showOutsideDays}
