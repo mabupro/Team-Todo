@@ -5,7 +5,7 @@ import { isSameDay, startOfDay } from 'date-fns';
 
 type Group = 'A' | 'B' | 'C' | 'D';
 
-/** 必須フィールド化した DateRange */
+/** from/to を必須にした DateRange */
 type FixedDateRange = { from: Date; to: Date };
 
 const GROUP_RANGES: Record<Group, FixedDateRange> = {
@@ -16,31 +16,30 @@ const GROUP_RANGES: Record<Group, FixedDateRange> = {
 };
 
 export function useCalendarLogic() {
-  /* ───────── 今日 (00:00 固定) ───────── */
+  /* ───── 今日 (00:00) ───── */
   const today = useMemo(() => startOfDay(new Date()), []);
 
-  /* ── 今日を含む班を決定（見つからなければ 'A'）───────── */
+  /* ───── デフォルト班 ───── */
   const defaultGroup: Group = useMemo(() => {
     for (const [g, range] of Object.entries(GROUP_RANGES) as [
       Group,
       FixedDateRange,
     ][]) {
-      const from = startOfDay(range.from!);
-      const to = startOfDay(range.to!);
-      if (today >= from && today <= to) return g;
+      if (today >= range.from && today <= range.to) return g;
     }
     return 'A';
   }, [today]);
 
-  /* ── state ─────────────────────────── */
+  /* ───── state ───── */
   const [selectedGroup, setSelectedGroup] = useState<Group>(defaultGroup);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>();
+
   const onChangeGroup = useCallback(
     (g: string) => setSelectedGroup(g as Group),
     [],
   );
 
-  /* ■ 祝日・会社休日 */
+  /* ───── 祝日／会社休日 ───── */
   const jpHolidays = useMemo(() => {
     const hd = new Holidays('JP');
     return hd.getHolidays(today.getFullYear()).map((h) => startOfDay(h.start));
@@ -51,7 +50,7 @@ export function useCalendarLogic() {
     [],
   );
 
-  /* ■ 営業日判定／次営業日 */
+  /* ───── 営業日判定 ───── */
   const isBusinessDay = useCallback(
     (d: Date) => {
       const dow = d.getDay();
@@ -64,13 +63,14 @@ export function useCalendarLogic() {
   );
 
   const getNextBusinessDay = useCallback((): Date => {
-    const d = new Date(today);
-    do d.setDate(d.getDate() + 1);
-    while (!isBusinessDay(d));
+    const d = startOfDay(new Date(today));
+    do {
+      d.setDate(d.getDate() + 1);
+    } while (!isBusinessDay(d));
     return d;
   }, [today, isBusinessDay]);
 
-  /* ■ カレンダー表示用 ─────────────── */
+  /* ───── react-day-picker props ───── */
   const disabledDays = useMemo(
     () => [{ dayOfWeek: [0, 6] }, ...jpHolidays, ...companyHolidays],
     [jpHolidays, companyHolidays],
@@ -81,17 +81,21 @@ export function useCalendarLogic() {
     [selectedGroup],
   );
 
+  /* ───── expose ───── */
   return {
-    // state
+    /* state */
     selectedGroup,
     onChangeGroup,
     selectedDate,
     setSelectedDate,
 
-    // calendar props
+    /* calendar props */
     today,
     disabledDays,
     assignmentRange,
     getNextBusinessDay,
+
+    /* ★ 外部で使うため追加 */
+    isBusinessDay,
   };
 }

@@ -1,32 +1,22 @@
+// app/(pages)/CalendarDemo.tsx
 'use client';
 
 import { useState } from 'react';
 import { useCalendarLogic } from '@/hooks/useCalendarLogic';
 import { useWorkLocation } from '@/hooks/useWorkLocation';
 import { CalendarPanel } from '@/components/CalendarPanel';
-import { Tasklist } from '@/components/Tasklist';
+import TaskList from '@/components/tasklist/TaskList';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { Task } from '@/components/Tasklist';
 
-// 班ごとのメンバー一覧とタスク一覧をmainで一元管理
+/* ---------- 班ごとのメンバー ---------- */
 type Group = 'A' | 'B' | 'C' | 'D';
-
 const MEMBER_LIST: Record<Group, string[]> = {
   A: ['Alice', 'Bob', 'Charlie'],
   B: ['Dave', 'Eve', 'Frank'],
   C: ['Grace', 'Heidi', 'Ivan'],
   D: ['Judy', 'Ken', 'Leo'],
 };
-
-const ALL_MEMBERS = Object.values(MEMBER_LIST).flat();
-
-const TASKS: Task[] = [
-  { id: 1, label: '朝会準備', members: ALL_MEMBERS, session: 'morning' },
-  { id: 2, label: '朝会片付け', members: ALL_MEMBERS, session: 'morning' },
-  { id: 3, label: '夕会準備', members: ALL_MEMBERS, session: 'evening' },
-  { id: 4, label: '夕会片付け', members: ALL_MEMBERS, session: 'evening' },
-];
 
 export default function CalendarDemo() {
   const {
@@ -38,22 +28,25 @@ export default function CalendarDemo() {
     selectedGroup,
     onChangeGroup,
     getNextBusinessDay,
+    /* ★ isBusinessDay を hook から受け取れるようにしておく */
+    isBusinessDay,
   } = useCalendarLogic();
 
-  // mainで管理するメンバー選択
+  /* ---------- メンバー選択 ---------- */
   const [selectedMember, setSelectedMember] = useState<string>('');
   const members = MEMBER_LIST[selectedGroup as Group];
 
-  // 選択日の勤務場所
-  const location = useWorkLocation(selectedDate);
+  /* ---------- 勤務場所 ---------- */
+  const location = useWorkLocation(selectedDate); // 例: '銀座' | '新宿' | '在宅' | undefined
+  const business = selectedDate ? isBusinessDay(selectedDate) : true;
 
-  // 班変更時にメンバーをリセット
+  /* ---------- 班変更時にメンバーをリセット ---------- */
   const handleChangeGroup = (g: string) => {
     onChangeGroup(g);
     setSelectedMember('');
   };
 
-  // 朝会／夕会タブ制御
+  /* ---------- 朝会／夕会タブ ---------- */
   const [session, setSession] = useState<'morning' | 'evening'>('morning');
 
   return (
@@ -80,7 +73,7 @@ export default function CalendarDemo() {
         </CardContent>
       </Card>
 
-      {/* 勤務場所表示パネル ★ ここを新設 */}
+      {/* 勤務場所表示パネル */}
       <Card className="w-full max-w-6xl">
         <CardHeader>
           <CardTitle>選択日の勤務場所</CardTitle>
@@ -114,11 +107,11 @@ export default function CalendarDemo() {
           <CardTitle>タスクリスト</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* session を渡して Tasklist 内で判別 */}
-          <Tasklist
+          <TaskList
             selectedMember={selectedMember}
-            tasks={TASKS}
             session={session}
+            location={location ?? '未登録'}
+            isBusinessDay={business}
           />
         </CardContent>
       </Card>
