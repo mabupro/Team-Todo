@@ -5,17 +5,20 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, X, ChevronUp, ChevronDown } from 'lucide-react';
-import { Task } from '@/app/types/task';
+
+import type { Task, MemberName } from '@/app/types';
 import { circled } from '@/utils/circled';
 
+/* ------------------------------------------------------------------ */
 interface TaskFormProps {
   draft: Omit<Task, 'id'>;
-  activeMembers: string[];
+  activeMembers: MemberName[];
   onChange: (draft: Omit<Task, 'id'>) => void;
   onCancel: () => void;
   onSave: () => void;
   isNew: boolean;
 }
+/* ------------------------------------------------------------------ */
 
 export function TaskForm({
   draft,
@@ -25,7 +28,7 @@ export function TaskForm({
   onSave,
   isNew,
 }: TaskFormProps) {
-  /* --- step handlers --- */
+  /* ---- step handlers ------------------------------------------- */
   const handleStepChange = (i: number, v: string) =>
     onChange({
       ...draft,
@@ -49,14 +52,14 @@ export function TaskForm({
     onChange({ ...draft, steps });
   };
 
-  /* --- role handlers --- */
+  /* ---- role handlers ------------------------------------------- */
   const handleRoleName = (i: number, v: string) =>
     onChange({
       ...draft,
       roles: draft.roles?.map((r, idx) => (idx === i ? { ...r, role: v } : r)),
     });
 
-  const handleRoleMember = (i: number, v: string) =>
+  const handleRoleMember = (i: number, v: MemberName) =>
     onChange({
       ...draft,
       roles: draft.roles?.map((r, idx) =>
@@ -67,7 +70,7 @@ export function TaskForm({
   const addRole = () =>
     onChange({
       ...draft,
-      roles: [...(draft.roles ?? []), { role: '', member: '' }],
+      roles: [...(draft.roles ?? []), { role: '', member: '' as MemberName }],
     });
 
   const removeRole = (i: number) =>
@@ -76,6 +79,7 @@ export function TaskForm({
       roles: draft.roles?.filter((_, idx) => idx !== i),
     });
 
+  /* ---- render --------------------------------------------------- */
   return (
     <Card className="mb-6 w-full">
       <CardHeader>
@@ -83,6 +87,7 @@ export function TaskForm({
           {isNew ? 'タスクを追加' : 'タスクを編集'}
         </CardTitle>
       </CardHeader>
+
       <CardContent className="space-y-4">
         <Input
           placeholder="タスク名"
@@ -98,7 +103,7 @@ export function TaskForm({
           <span>毎日行うタスク</span>
         </label>
 
-        {/* 手順編集 */}
+        {/* 手順編集 -------------------------------------------------- */}
         <div className="space-y-2">
           {draft.steps?.map((s, i) => (
             <div key={i} className="flex items-center space-x-2">
@@ -142,7 +147,7 @@ export function TaskForm({
           </Button>
         </div>
 
-        {/* 役割編集 */}
+        {/* 役割編集 -------------------------------------------------- */}
         <div className="space-y-2">
           <p className="text-sm font-medium">役割と担当</p>
           {draft.roles?.map((r, i) => (
@@ -155,7 +160,9 @@ export function TaskForm({
               />
               <select
                 value={r.member}
-                onChange={(e) => handleRoleMember(i, e.target.value)}
+                onChange={(e) =>
+                  handleRoleMember(i, e.target.value as MemberName)
+                }
                 className="flex-1 rounded-md border px-2 py-1 text-sm"
               >
                 <option value="">— 担当者 —</option>
@@ -181,7 +188,7 @@ export function TaskForm({
           </Button>
         </div>
 
-        {/* メンバー選択 */}
+        {/* メンバー選択 --------------------------------------------- */}
         <div className="grid grid-cols-3 gap-2">
           {activeMembers.map((m) => (
             <label key={m} className="flex items-center space-x-2 text-sm">
@@ -201,7 +208,7 @@ export function TaskForm({
           ))}
         </div>
 
-        {/* セッション選択 */}
+        {/* セッション選択 ------------------------------------------- */}
         <div className="flex space-x-4">
           {(['morning', 'evening'] as const).map((s) => (
             <label key={s} className="flex items-center space-x-1 text-sm">

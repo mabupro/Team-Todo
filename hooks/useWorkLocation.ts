@@ -1,24 +1,27 @@
-// hooks/useWorkLocation.ts
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { startOfDay } from 'date-fns';
+'use client';
 
-type Location = '銀座' | '新宿' | '在宅' | '休暇';
+import { format } from 'date-fns';
+import type { LocationCode } from '@/app/types'; // ← 共通型を参照
 
-const WORK_LOCATIONS: Record<number, Location> = {
-  // key は yyyyMMdd を数値にしたもの
+/* ------------------------------------------------------------------ */
+/** 日付キー → 勤務地 */
+const WORK_LOCATIONS: Record<number, LocationCode> = {
   20250519: '銀座',
   20250520: '在宅',
   20250521: '新宿',
   20250522: '休暇',
 };
+/* ------------------------------------------------------------------ */
 
-export function useWorkLocation(date?: Date): Location | undefined {
-  if (!date) return;
-  const key = Number(
-    date
-      .toISOString() // "2025-05-19T00:00:00.000Z"
-      .slice(0, 10) // "2025-05-19"
-      .replace(/-/g, ''), // "20250519"
-  );
+/**
+ * 任意の日付に対する勤務地を返すカスタム Hook
+ * @param date  判定対象の日付（未指定なら undefined）
+ * @returns     勤務地 ID ／ 登録が無ければ undefined
+ */
+export function useWorkLocation(date?: Date): LocationCode | undefined {
+  if (!date) return undefined;
+
+  /** `yyyyMMdd` を数値化してキー化 */
+  const key = Number(format(date, 'yyyyMMdd')); // e.g. 20250519
   return WORK_LOCATIONS[key];
 }

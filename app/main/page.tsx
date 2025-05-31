@@ -1,17 +1,19 @@
-// app/(pages)/CalendarDemo.tsx
 'use client';
 
 import { useState } from 'react';
 import { useCalendarLogic } from '@/hooks/useCalendarLogic';
 import { useWorkLocation } from '@/hooks/useWorkLocation';
+
 import { CalendarPanel } from '@/components/CalendarPanel';
 import TaskList from '@/components/tasklist/TaskList';
+
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-/* ---------- 班ごとのメンバー ---------- */
-type Group = 'A' | 'B' | 'C' | 'D';
-const MEMBER_LIST: Record<Group, string[]> = {
+import type { GroupId, MemberName, Session, LocationCode } from '@/app/types';
+
+/* 班→メンバー */
+const MEMBER_LIST: Record<GroupId, MemberName[]> = {
   A: ['Alice', 'Bob', 'Charlie'],
   B: ['Dave', 'Eve', 'Frank'],
   C: ['Grace', 'Heidi', 'Ivan'],
@@ -28,32 +30,33 @@ export default function CalendarDemo() {
     selectedGroup,
     onChangeGroup,
     getNextBusinessDay,
-    /* ★ isBusinessDay を hook から受け取れるようにしておく */
     isBusinessDay,
   } = useCalendarLogic();
 
-  /* ---------- メンバー選択 ---------- */
-  const [selectedMember, setSelectedMember] = useState<string>('');
-  const members = MEMBER_LIST[selectedGroup as Group];
+  /* メンバー選択（undefined = 全員） */
+  const [selectedMember, setSelectedMember] = useState<MemberName | undefined>(
+    undefined,
+  );
+  const members = MEMBER_LIST[selectedGroup];
 
-  /* ---------- 勤務場所 ---------- */
-  const location = useWorkLocation(selectedDate); // 例: '銀座' | '新宿' | '在宅' | undefined
+  /* 勤務場所 */
+  const location = useWorkLocation(selectedDate); // LocationCode | undefined
   const business = selectedDate ? isBusinessDay(selectedDate) : true;
 
-  /* ---------- 班変更時にメンバーをリセット ---------- */
-  const handleChangeGroup = (g: string) => {
+  /* 班切替でメンバー選択をリセット */
+  const handleChangeGroup = (g: GroupId) => {
     onChangeGroup(g);
-    setSelectedMember('');
+    setSelectedMember(undefined);
   };
 
-  /* ---------- 朝会／夕会タブ ---------- */
-  const [session, setSession] = useState<'morning' | 'evening'>('morning');
+  /* セッション */
+  const [session, setSession] = useState<Session>('morning');
 
   return (
     <div className="min-h-screen flex flex-col items-center p-4 space-y-6">
-      {/* カレンダーと操作パネル */}
+      {/* カレンダー＋操作パネル */}
       <Card className="w-full max-w-6xl">
-        <CardHeader className="flex items-center justify-between">
+        <CardHeader>
           <CardTitle>カレンダーと操作パネル</CardTitle>
         </CardHeader>
         <CardContent>
@@ -73,7 +76,7 @@ export default function CalendarDemo() {
         </CardContent>
       </Card>
 
-      {/* 勤務場所表示パネル */}
+      {/* 勤務場所パネル */}
       <Card className="w-full max-w-6xl">
         <CardHeader>
           <CardTitle>選択日の勤務場所</CardTitle>
@@ -89,10 +92,10 @@ export default function CalendarDemo() {
         </CardContent>
       </Card>
 
-      {/* セッション切替タブ */}
+      {/* セッション切替 */}
       <Tabs
         defaultValue={session}
-        onValueChange={(v) => setSession(v as 'morning' | 'evening')}
+        onValueChange={(v) => setSession(v as Session)}
         className="w-full max-w-6xl"
       >
         <TabsList>
@@ -110,7 +113,7 @@ export default function CalendarDemo() {
           <TaskList
             selectedMember={selectedMember}
             session={session}
-            location={location ?? '未登録'}
+            location={(location ?? '未登録') as LocationCode}
             isBusinessDay={business}
           />
         </CardContent>

@@ -1,7 +1,6 @@
 'use client';
 
 import { Calendar } from '@/components/ui/calendar';
-import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectTrigger,
@@ -12,7 +11,11 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import type { DateRange } from 'react-day-picker';
+
+/* ───────── 型 ───────── */
+import type { GroupId, MemberName } from '@/app/types';
 
 interface CalendarPanelProps {
   today: Date;
@@ -20,13 +23,16 @@ interface CalendarPanelProps {
   assignmentRange: DateRange;
   selectedDate?: Date;
   onSelectDate: (d: Date | undefined) => void;
-  selectedGroup: string;
-  onChangeGroup: (g: string) => void;
+
+  selectedGroup: GroupId;
+  onChangeGroup: (g: GroupId) => void;
+
   onNextBusinessDay: () => void;
-  // 追加 props: メンバーリストと選択
-  members: string[];
-  selectedMember: string;
-  onChangeMember: (m: string) => void;
+
+  /* メンバー */
+  members: MemberName[];
+  selectedMember?: MemberName; // undefined = 全員
+  onChangeMember: (m: MemberName | undefined) => void;
 }
 
 export function CalendarPanel({
@@ -42,9 +48,12 @@ export function CalendarPanel({
   selectedMember,
   onChangeMember,
 }: CalendarPanelProps) {
+  /* Select 用の value */
+  const memberValue = selectedMember ?? '__ALL__';
+
   return (
     <div className="flex p-6 gap-5 rounded-xl shadow-md">
-      {/* カレンダー */}
+      {/* ───────── カレンダー ───────── */}
       <div className="flex-1">
         <Calendar
           className="h-full"
@@ -67,22 +76,23 @@ export function CalendarPanel({
         />
       </div>
 
-      {/* 操作用パネル */}
+      {/* ───────── 操作用パネル ───────── */}
       <Card className="w-80 h-full flex flex-col">
         <CardHeader>
           <CardTitle>操作パネル</CardTitle>
-          {/* 班とメンバー表示 */}
           <div className="flex space-x-2 mt-2">
             <Badge variant="secondary">班 {selectedGroup}</Badge>
-            <Badge variant="secondary">{selectedMember || '全員'}</Badge>
+            <Badge variant="secondary">{selectedMember ?? '全員'}</Badge>
           </div>
         </CardHeader>
+
         <Separator />
+
         <CardContent className="flex-1 flex flex-col justify-between">
           <div className="space-y-4">
             {/* 今日 */}
             <div className="p-4 bg-white rounded-lg shadow-inner">
-              <div className="text-xs text-gray-500">今日の日付</div>
+              <div className="text-xs text-gray-500">今日</div>
               <div className="text-lg font-semibold">
                 {today.toLocaleDateString('ja-JP')}
               </div>
@@ -96,15 +106,19 @@ export function CalendarPanel({
             {/* 班選択 */}
             <div className="space-y-1">
               <div className="text-xs text-gray-500">班を選択</div>
-              <Select value={selectedGroup} onValueChange={onChangeGroup}>
+              <Select
+                value={selectedGroup}
+                onValueChange={(v) => onChangeGroup(v as GroupId)}
+              >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="班を選択" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="A">班 A</SelectItem>
-                  <SelectItem value="B">班 B</SelectItem>
-                  <SelectItem value="C">班 C</SelectItem>
-                  <SelectItem value="D">班 D</SelectItem>
+                  {(['A', 'B', 'C', 'D'] as GroupId[]).map((g) => (
+                    <SelectItem key={g} value={g}>
+                      班 {g}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -112,11 +126,19 @@ export function CalendarPanel({
             {/* メンバー選択 */}
             <div className="space-y-1">
               <div className="text-xs text-gray-500">メンバーを選択</div>
-              <Select value={selectedMember} onValueChange={onChangeMember}>
+              <Select
+                value={memberValue}
+                onValueChange={(v) =>
+                  onChangeMember(
+                    v === '__ALL__' ? undefined : (v as MemberName),
+                  )
+                }
+              >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="メンバーを選択" />
+                  <SelectValue placeholder="全員" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="__ALL__">全員</SelectItem>
                   {members.map((name) => (
                     <SelectItem key={name} value={name}>
                       {name}

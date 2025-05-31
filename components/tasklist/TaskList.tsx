@@ -7,18 +7,22 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 
-import { Task } from '@/app/types/task';
+import type { Task, Session, LocationCode, MemberName } from '@/app/types';
 import { LOCATION_TASK_TEMPLATES } from '@/app/constants/locationTaskTemplates';
 import { TaskItem } from './TaskItem';
 import { TaskForm } from './TaskForm';
 import { setDoneState } from '@/utils/dnd';
 
+/* ------------------------------------------------------------------ */
+/** props */
 interface TaskListProps {
-  selectedMember: string;
-  session: 'morning' | 'evening';
-  location: string;
+  /** undefined = 全員 */
+  selectedMember?: MemberName;
+  session: Session;
+  location: LocationCode | '未登録';
   isBusinessDay: boolean;
 }
+/* ------------------------------------------------------------------ */
 
 export default function TaskList({
   selectedMember,
@@ -26,11 +30,12 @@ export default function TaskList({
   location,
   isBusinessDay,
 }: TaskListProps) {
+  /* ------- state ------------------------------------------------ */
   const [tasks, setTasks] = useState<Task[]>(
     LOCATION_TASK_TEMPLATES[location] ?? [],
   );
-  const [completedIds, setCompletedIds] = useState<number[]>([]);
-  const [editId, setEditId] = useState<number | null>(null);
+  const [completedIds, setCompletedIds] = useState<Task['id'][]>([]);
+  const [editId, setEditId] = useState<Task['id'] | null>(null);
   const [draft, setDraft] = useState<Omit<Task, 'id'>>({
     label: '',
     members: [],
@@ -40,13 +45,14 @@ export default function TaskList({
     everyday: false,
   });
 
-  /* --- location change --- */
+  /* ------- reload when location changes ------------------------ */
   useEffect(() => {
     setTasks(LOCATION_TASK_TEMPLATES[location] ?? []);
     setCompletedIds([]);
     setEditId(null);
   }, [location]);
 
+  /* ------- non-business day ------------------------------------ */
   if (!isBusinessDay || location === '未登録') {
     return (
       <p className="text-center text-muted-foreground">
@@ -55,11 +61,11 @@ export default function TaskList({
     );
   }
 
+  /* ------- helpers -------------------------------------------- */
   const activeMembers = Array.from(
     new Set(tasks.flatMap((t) => t.members)),
   ).sort();
 
-  /* --- CRUD helpers --- */
   const clearDraft = () =>
     setDraft({
       label: '',
@@ -70,8 +76,9 @@ export default function TaskList({
       everyday: false,
     });
 
+  /* ------- CRUD ------------------------------------------------ */
   const startCreate = () => {
-    setEditId(-1);
+    setEditId(-1); // 新規
     clearDraft();
   };
 
@@ -93,7 +100,8 @@ export default function TaskList({
   };
 
   const save = () => {
-    if (draft.label.trim() === '') return;
+    if (!draft.label.trim()) return;
+
     if (editId === -1) {
       const nextId = Math.max(0, ...tasks.map((t) => t.id)) + 1;
       setTasks((p) => [...p, { ...draft, id: nextId }]);
@@ -103,30 +111,33 @@ export default function TaskList({
     cancelEdit();
   };
 
-  const remove = (id: number) => setTasks((p) => p.filter((t) => t.id !== id));
+  const remove = (id: Task['id']) =>
+    setTasks((p) => p.filter((t) => t.id !== id));
 
-  /* --- DnD --- */
-  const onDragStart = (e: React.DragEvent<HTMLLIElement>, id: number) =>
+  /* ------- DnD -------------------------------------------------- */
+  const onDragStart = (e: React.DragEvent<HTMLLIElement>, id: Task['id']) =>
     e.dataTransfer.setData('text/plain', String(id));
 
   const onDragOver = (e: React.DragEvent) => e.preventDefault();
 
   const onDrop = (e: React.DragEvent, done: boolean) => {
-    const id = Number(e.dataTransfer.getData('text/plain'));
+    const id = Number(e.dataTransfer.getData('text/plain')) as Task['id'];
     setDoneState(id, done, setCompletedIds);
   };
 
-  /* --- lists --- */
+  /* ------- list ------------------------------------------------- */
   const list = tasks.filter(
     (t) =>
       t.session === session &&
-      (selectedMember === '' || t.members.includes(selectedMember)),
+      (!selectedMember || t.members.includes(selectedMember)),
   );
   const incomplete = list.filter((t) => !completedIds.includes(t.id));
   const complete = list.filter((t) => completedIds.includes(t.id));
 
+  /* ------- render ---------------------------------------------- */
   return (
     <>
+      {/* ───────── 編集フォーム ───────── */}
       {editId !== null && (
         <TaskForm
           draft={draft}
@@ -148,8 +159,9 @@ export default function TaskList({
         </Button>
       )}
 
+      {/* ───────── 一覧 ───────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* 未完了 */}
+        {/* 未完了 --------------------------------------------------- */}
         <Card>
           <CardHeader className="flex items-center justify-between">
             <CardTitle className="text-lg">未完了</CardTitle>
@@ -177,7 +189,7 @@ export default function TaskList({
           </CardContent>
         </Card>
 
-        {/* 完了 */}
+        {/* 完了 ----------------------------------------------------- */}
         <Card>
           <CardHeader className="flex items-center justify-between">
             <CardTitle className="text-lg">完了</CardTitle>

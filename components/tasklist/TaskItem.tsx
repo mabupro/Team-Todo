@@ -4,17 +4,20 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Pencil, Trash2 } from 'lucide-react';
-import { Role, Task } from '@/app/types/task';
+
+import type { Task, Role } from '@/app/types';
 import { circled } from '@/utils/circled';
 
+/* ------------------------------------------------------------------ */
 interface TaskItemProps {
   task: Task;
   done: boolean;
   onToggleDone: () => void;
   onEdit: () => void;
   onRemove: () => void;
-  onDragStart: (e: React.DragEvent<HTMLLIElement>, id: number) => void;
+  onDragStart: (e: React.DragEvent<HTMLLIElement>, id: Task['id']) => void;
 }
+/* ------------------------------------------------------------------ */
 
 export function TaskItem({
   task,
@@ -24,6 +27,7 @@ export function TaskItem({
   onRemove,
   onDragStart,
 }: TaskItemProps) {
+  /* ---- helpers -------------------------------------------------- */
   const renderSteps = (steps?: string[]) =>
     steps?.length ? (
       <ul className="pl-6 mt-2 space-y-1 relative">
@@ -48,6 +52,7 @@ export function TaskItem({
       </ul>
     ) : null;
 
+  /* ---- render --------------------------------------------------- */
   return (
     <li
       draggable
@@ -68,6 +73,7 @@ export function TaskItem({
             </Badge>
           )}
         </div>
+
         <div className="flex items-center space-x-2">
           <span className="text-xs text-muted-foreground max-w-[120px] truncate">
             {task.members.join(', ')}
@@ -80,6 +86,7 @@ export function TaskItem({
           </Button>
         </div>
       </div>
+
       {renderSteps(task.steps)}
       {renderRoles(task.roles)}
     </li>
